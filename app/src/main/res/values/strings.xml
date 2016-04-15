@@ -12,5 +12,7 @@
     <string name="network_toast">Uh-oh! This app requires an internet connection</string>
 
     <string name="InitialUrl">https://query.yahooapis.com/</string>
+    <string name="fab_content_desc">Search for a stock.</string>
+    <string name="fab_content_desc_no_internet">No internet connection.Search is not available.</string>
 
 </resources>

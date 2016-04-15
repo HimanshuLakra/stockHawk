@@ -31,8 +31,24 @@
     </LinearLayout>
 
     <ListView
+        android:id="@+id/list_view_widget"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/list_view_widget"/>
+        android:id="@+id/empty_view">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginLeft="10dp"
+            android:layout_marginStart="10dp"
+            android:text="No stocks available"
+            android:textColor="@color/stock_symbol"
+            android:textSize="16sp" />
+    </FrameLayout>
 
 </LinearLayout>

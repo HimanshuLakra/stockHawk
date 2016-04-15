@@ -90,13 +90,12 @@ public class MyStocksActivity extends AppCompatActivity implements LoaderManager
                         //TODO:
                         // do something on item click
 
-                        if(mCursor != null)
-                        {
+                        if (mCursor != null) {
                             mCursor.moveToPosition(position);
                             String symbolName = mCursor.getString(1);
 
-                            Intent sendSymbol = new Intent(MyStocksActivity.this,DetailStockActivity.class);
-                            sendSymbol.putExtra("StockSymbol",symbolName);
+                            Intent sendSymbol = new Intent(MyStocksActivity.this, DetailStockActivity.class);
+                            sendSymbol.putExtra("StockSymbol", symbolName);
                             startActivity(sendSymbol);
                         }
 
@@ -106,12 +105,15 @@ public class MyStocksActivity extends AppCompatActivity implements LoaderManager
         recyclerView.setAdapter(mCursorAdapter);
 
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        final FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.attachToRecyclerView(recyclerView);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                isConnected = checkInternet();
                 if (isConnected) {
+
+                    fab.setContentDescription(getString(R.string.fab_content_desc));
                     new MaterialDialog.Builder(mContext).title(R.string.symbol_search)
                             .content(R.string.content_test)
                             .inputType(InputType.TYPE_CLASS_TEXT)
@@ -141,6 +143,7 @@ public class MyStocksActivity extends AppCompatActivity implements LoaderManager
                             })
                             .show();
                 } else {
+                    fab.setContentDescription(getString(R.string.fab_content_desc_no_internet));
                     networkToast();
                 }
 
