@@ -20,34 +20,34 @@ import com.sam_chordas.android.stockhawk.ui.DetailStockActivity;
 
 public class AppCollectionWidgetProvider extends AppWidgetProvider {
 
-    public static String CLICK_ACTION = "com.sam_chordas.android.quotelistwidget.CLICK";
+    public static String CLICK_ACTION = "com.sam_chordas.android.quotelistviewwidget.CLICK";
 
-    private static HandlerThread sWorkerThread;
-    private static Handler sWorkerQueue;
-    private static QuoteDataProviderObserver sDataObserver;
+    private static HandlerThread mWorkerThread;
+    private static Handler mWorkerQueue;
+    private static StockDataProviderObserver mDataObserver;
 
     public AppCollectionWidgetProvider() {
-        sWorkerThread = new HandlerThread("AppCollectionWidgetProvider-worker");
-        sWorkerThread.start();
-        sWorkerQueue = new Handler(sWorkerThread.getLooper());
+        mWorkerThread = new HandlerThread("AppCollectionWidgetProvider-worker");
+        mWorkerThread.start();
+        mWorkerQueue = new Handler(mWorkerThread.getLooper());
     }
 
     @Override
     public void onEnabled(Context context) {
         final ContentResolver r = context.getContentResolver();
-        if (sDataObserver == null) {
+        if (mDataObserver == null) {
             final AppWidgetManager mgr = AppWidgetManager.getInstance(context);
             final ComponentName cn = new ComponentName(context, AppCollectionWidgetProvider.class);
-            sDataObserver = new QuoteDataProviderObserver(mgr, cn, sWorkerQueue);
-            r.registerContentObserver(QuoteProvider.Quotes.CONTENT_URI, true, sDataObserver);
+            mDataObserver = new StockDataProviderObserver(mgr, cn, mWorkerQueue);
+            r.registerContentObserver(QuoteProvider.Quotes.CONTENT_URI, true, mDataObserver);
         }
     }
 
     @Override
     public void onDisabled(Context context) {
         final ContentResolver r = context.getContentResolver();
-        if (sDataObserver != null) {
-            r.unregisterContentObserver(sDataObserver);
+        if (mDataObserver != null) {
+            r.unregisterContentObserver(mDataObserver);
         }
 
     }
@@ -97,11 +97,11 @@ public class AppCollectionWidgetProvider extends AppWidgetProvider {
     }
 }
 
-class QuoteDataProviderObserver extends ContentObserver {
+class StockDataProviderObserver extends ContentObserver {
     private AppWidgetManager mAppWidgetManager;
     private ComponentName mComponentName;
 
-    QuoteDataProviderObserver(AppWidgetManager mgr, ComponentName cn, Handler h) {
+   StockDataProviderObserver(AppWidgetManager mgr, ComponentName cn, Handler h) {
         super(h);
         mAppWidgetManager = mgr;
         mComponentName = cn;
