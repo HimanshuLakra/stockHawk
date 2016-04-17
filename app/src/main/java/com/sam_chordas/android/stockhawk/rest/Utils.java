@@ -87,9 +87,14 @@ public class Utils {
             String change = jsonObject.getString("Change");
             builder.withValue(QuoteColumns.SYMBOL, jsonObject.getString("symbol"));
             builder.withValue(QuoteColumns.BIDPRICE, truncateBidPrice(jsonObject.getString("Bid")));
+
+            if(!jsonObject.getString("ChangeinPercent").equalsIgnoreCase("null"))
             builder.withValue(QuoteColumns.PERCENT_CHANGE, truncateChange(
                     jsonObject.getString("ChangeinPercent"), true));
+
+            if(!change.equalsIgnoreCase("null"))
             builder.withValue(QuoteColumns.CHANGE, truncateChange(change, false));
+
             builder.withValue(QuoteColumns.ISCURRENT, 1);
             if (change.charAt(0) == '-') {
                 builder.withValue(QuoteColumns.ISUP, 0);

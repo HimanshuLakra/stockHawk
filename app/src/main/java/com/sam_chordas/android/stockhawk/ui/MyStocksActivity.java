@@ -6,11 +6,9 @@ import android.content.CursorLoader;
 import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.app.ActionBar;
 import android.os.Bundle;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
@@ -19,10 +17,16 @@ import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.facebook.stetho.Stetho;
+import com.google.android.gms.gcm.GcmNetworkManager;
+import com.google.android.gms.gcm.PeriodicTask;
+import com.google.android.gms.gcm.Task;
+import com.melnykov.fab.FloatingActionButton;
+import com.sam_chordas.android.stockhawk.ConnectionDetector;
 import com.sam_chordas.android.stockhawk.R;
 import com.sam_chordas.android.stockhawk.data.QuoteColumns;
 import com.sam_chordas.android.stockhawk.data.QuoteProvider;
@@ -31,11 +35,10 @@ import com.sam_chordas.android.stockhawk.rest.RecyclerViewItemClickListener;
 import com.sam_chordas.android.stockhawk.rest.Utils;
 import com.sam_chordas.android.stockhawk.service.StockIntentService;
 import com.sam_chordas.android.stockhawk.service.StockTaskService;
-import com.google.android.gms.gcm.GcmNetworkManager;
-import com.google.android.gms.gcm.PeriodicTask;
-import com.google.android.gms.gcm.Task;
-import com.melnykov.fab.FloatingActionButton;
 import com.sam_chordas.android.stockhawk.touch_helper.SimpleItemTouchHelperCallback;
+
+import butterknife.Bind;
+import butterknife.ButterKnife;
 
 public class MyStocksActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
@@ -55,16 +58,23 @@ public class MyStocksActivity extends AppCompatActivity implements LoaderManager
     private Cursor mCursor;
     boolean isConnected;
 
+    @Bind(R.id.empty_recycler_view)
+    TextView empty_Recyclerview;
+    @Bind(R.id.recycler_view)
+    RecyclerView recyclerView;
+    @Bind(R.id.fab)
+    FloatingActionButton fab;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mContext = this;
 
-        isConnected = checkInternet();
+        isConnected = ConnectionDetector.isAvailiable(this);
         setContentView(R.layout.activity_my_stocks);
 
         Stetho.initializeWithDefaults(this);
-
+        ButterKnife.bind(this);
         // The intent service is for executing immediate pulls from the Yahoo API
         // GCMTaskService can only schedule tasks, they cannot execute immediately
         mServiceIntent = new Intent(this, StockIntentService.class);
@@ -78,7 +88,7 @@ public class MyStocksActivity extends AppCompatActivity implements LoaderManager
             }
         }
 
-        RecyclerView recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
+
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         getLoaderManager().initLoader(CURSOR_LOADER_ID, null, this);
 
@@ -104,13 +114,11 @@ public class MyStocksActivity extends AppCompatActivity implements LoaderManager
                 }));
         recyclerView.setAdapter(mCursorAdapter);
 
-
-        final FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.attachToRecyclerView(recyclerView);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                isConnected = checkInternet();
+                isConnected = ConnectionDetector.isAvailiable(MyStocksActivity.this);
                 if (isConnected) {
 
                     fab.setContentDescription(getString(R.string.fab_content_desc));
@@ -126,7 +134,7 @@ public class MyStocksActivity extends AppCompatActivity implements LoaderManager
                                             new String[]{QuoteColumns.SYMBOL}, QuoteColumns.SYMBOL + "= ?",
                                             new String[]{input.toString()}, null);
 
-                                    if (c.getCount() != 0) {
+                                    if (c != null && c.getCount() != 0) {
                                         Toast toast =
                                                 Toast.makeText(MyStocksActivity.this, "This stock is already saved!",
                                                         Toast.LENGTH_LONG);
@@ -149,6 +157,7 @@ public class MyStocksActivity extends AppCompatActivity implements LoaderManager
 
             }
         });
+
 
         ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(mCursorAdapter);
         mItemTouchHelper = new ItemTouchHelper(callback);
@@ -235,8 +244,18 @@ public class MyStocksActivity extends AppCompatActivity implements LoaderManager
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-        mCursorAdapter.swapCursor(data);
-        mCursor = data;
+
+        if (data == null || data.getCount() == 0) {
+            makeEmptyViewVisible();
+            updateEmptyView();
+        } else {
+            makeRecyclerViewVisible();
+            mCursorAdapter.swapCursor(data);
+            mCursor = data;
+            if(!ConnectionDetector.isAvailiable(this)){
+                Toast.makeText(this,R.string.out_of_date,Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     @Override
@@ -244,15 +263,29 @@ public class MyStocksActivity extends AppCompatActivity implements LoaderManager
         mCursorAdapter.swapCursor(null);
     }
 
-    public boolean checkInternet() {
 
-        ConnectivityManager cm =
-                (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+    public void updateEmptyView(){
 
-        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        String message;
+        if(ConnectionDetector.isAvailiable(MyStocksActivity.this)){
+                message = getString(R.string.empty_recyclerview);
+        }else{
+            message = getString(R.string.empty_recyclerview_no_internet);
+        }
 
-        return activeNetwork != null &&
-                activeNetwork.isConnectedOrConnecting();
+        empty_Recyclerview.setText(message);
     }
+
+    public void makeRecyclerViewVisible() {
+        empty_Recyclerview.setVisibility(View.GONE);
+        recyclerView.setVisibility(View.VISIBLE);
+    }
+
+    public void makeEmptyViewVisible() {
+        recyclerView.setVisibility(View.GONE);
+        empty_Recyclerview.setVisibility(View.VISIBLE);
+    }
+
+
 
 }

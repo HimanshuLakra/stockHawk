@@ -7,6 +7,8 @@ import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.facebook.stetho.okhttp3.StethoInterceptor;
@@ -18,6 +20,7 @@ import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.sam_chordas.android.stockhawk.ConnectionDetector;
 import com.sam_chordas.android.stockhawk.R;
 import com.sam_chordas.android.stockhawk.data.ItemTypeAdapterFactory;
 import com.sam_chordas.android.stockhawk.data.StockDataModel;
@@ -30,6 +33,7 @@ import java.util.Arrays;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 import okhttp3.OkHttpClient;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -46,6 +50,10 @@ public class DetailStockActivity extends AppCompatActivity {
     LineChart lineChartView;
     @Bind(R.id.toolbar_graph)
     Toolbar toolbar;
+    @Bind(R.id.text_detail)
+    TextView detail_text;
+    @Bind(R.id.try_again)
+    Button tryAgain;
 
     String queryForDB;
     String queryForTable = "store://datatables.org/alltableswithkeys";
@@ -62,12 +70,13 @@ public class DetailStockActivity extends AppCompatActivity {
         toolbar.setTitle(stockSymbol);
         toolbar.setNavigationIcon(R.drawable.md_nav_back);
         setSupportActionBar(toolbar);
+        detail_text.setText(getString(R.string.graph_loading));
 
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-                Intent toMainActivity = new Intent(DetailStockActivity.this,MyStocksActivity.class);
+                Intent toMainActivity = new Intent(DetailStockActivity.this, MyStocksActivity.class);
                 startActivity(toMainActivity);
                 finish();
             }
@@ -75,17 +84,34 @@ public class DetailStockActivity extends AppCompatActivity {
 
         queryForDB = "select * from yahoo.finance.historicaldata where symbol = \"" + stockSymbol +
                 "\" and startDate = \"2016-04-01\" and " +
-                "endDate = \"2016-04-08\"";
+                "endDate = \"2016-04-17\"";
 
         if (savedInstanceState == null) {
             recievedList = new ArrayList<>();
-            RequestStockData(queryForDB, queryForTable);
         } else {
             recievedList = Parcels.unwrap(savedInstanceState.getParcelable("stockDataSet"));
-            if (recievedList != null)
-            setDataForLineChart(recievedList);
+            if (!recievedList.isEmpty()){
+                setDataForLineChart(recievedList);
+            }
         }
 
+        if (ConnectionDetector.isAvailiable(this)) {
+            RequestStockData(queryForDB, queryForTable);
+        }else{
+            noInternetView();
+        }
+
+    }
+
+    @OnClick(R.id.try_again)
+    public void onClickTryAgain(){
+        if (ConnectionDetector.isAvailiable(this)) {
+            detail_text.setText(getString(R.string.graph_loading));
+            detail_text.setVisibility(View.VISIBLE);
+            RequestStockData(queryForDB, queryForTable);
+        }else{
+            noInternetView();
+        }
     }
 
     @Override
@@ -93,6 +119,19 @@ public class DetailStockActivity extends AppCompatActivity {
 
         outState.putParcelable("stockDataSet", Parcels.wrap(recievedList));
         super.onSaveInstanceState(outState);
+    }
+
+    public void makeChartVisible() {
+        detail_text.setVisibility(View.GONE);
+        tryAgain.setVisibility(View.GONE);
+        lineChartView.setVisibility(View.VISIBLE);
+    }
+
+    public void noInternetView() {
+        detail_text.setText(getString(R.string.no_internet));
+        tryAgain.setVisibility(View.VISIBLE);
+        lineChartView.setVisibility(View.GONE);
+        detail_text.setVisibility(View.VISIBLE);
     }
 
     public void setDataForLineChart(ArrayList<StockDataModel> recievedDataList) {
@@ -125,6 +164,8 @@ public class DetailStockActivity extends AppCompatActivity {
         LineData data = new LineData(xVals, dataSets);
         lineChartView.setData(data);
         lineChartView.invalidate();
+
+        makeChartVisible();
     }
 
     public void RequestStockData(String queryDB, String queryTable) {

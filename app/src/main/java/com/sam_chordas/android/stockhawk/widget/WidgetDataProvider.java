@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Binder;
+import android.os.Bundle;
 import android.widget.RemoteViews;
 import android.widget.RemoteViewsService;
 
@@ -17,7 +18,6 @@ import java.util.ArrayList;
 public class WidgetDataProvider implements RemoteViewsService.RemoteViewsFactory {
 
     Context mContext;
-    private int mAppWidgetId;
     ArrayList<ListItemModel> dataForWidget = new ArrayList<>();
 
 
@@ -27,15 +27,17 @@ public class WidgetDataProvider implements RemoteViewsService.RemoteViewsFactory
 
     @Override
     public void onCreate() {
-        getDataFromDB();
+
     }
 
     public void getDataFromDB() {
 
         Cursor c = mContext.getContentResolver().query(QuoteProvider.Quotes.CONTENT_URI,
                 new String[]{QuoteColumns._ID, QuoteColumns.SYMBOL, QuoteColumns.BIDPRICE,
-                        QuoteColumns.PERCENT_CHANGE, QuoteColumns.CHANGE, QuoteColumns.ISUP}, null,
-                null, null);
+                        QuoteColumns.PERCENT_CHANGE, QuoteColumns.CHANGE, QuoteColumns.ISUP},
+                QuoteColumns.ISCURRENT + " = ?",
+                new String[]{"1"}
+                , null);
 
         if (c != null) {
 
@@ -53,38 +55,12 @@ public class WidgetDataProvider implements RemoteViewsService.RemoteViewsFactory
 
     }
 
-    public void getUpdatedDB() {
-
-        Cursor c = mContext.getContentResolver().query(QuoteProvider.Quotes.CONTENT_URI,
-                new String[]{QuoteColumns._ID, QuoteColumns.SYMBOL, QuoteColumns.BIDPRICE,
-                        QuoteColumns.PERCENT_CHANGE, QuoteColumns.CHANGE, QuoteColumns.ISUP}, null,
-                null, null);
-
-        if (c != null) {
-
-            int dataSize = dataForWidget.size();
-            if (dataSize != 0) {
-                c.moveToPosition(dataSize-1);
-            }
-
-            while (c.moveToNext()) {
-                ListItemModel stockDatabse = new ListItemModel(c.getString(c.getColumnIndex("symbol")),
-                        c.getString(c.getColumnIndex("bid_price")),
-                        c.getString(c.getColumnIndex("percent_change")));
-
-                dataForWidget.add(stockDatabse);
-            }
-
-            c.close();
-        }
-
-    }
 
     @Override
     public void onDataSetChanged() {
         final long identityToken = Binder.clearCallingIdentity();
 
-        getUpdatedDB();
+        getDataFromDB();
         // Restore the identity - not sure if it's needed since we're going
         // to return right here, but it just *seems* cleaner
         Binder.restoreCallingIdentity(identityToken);
@@ -108,6 +84,12 @@ public class WidgetDataProvider implements RemoteViewsService.RemoteViewsFactory
         view.setTextViewText(R.id.stock_symbol, dataForWidget.get(position).stockName);
         view.setTextViewText(R.id.bid_price, dataForWidget.get(position).stockBid);
         view.setTextViewText(R.id.change, dataForWidget.get(position).stockPercentageChange);
+
+        final Intent fillInIntent = new Intent();
+        final Bundle extras = new Bundle();
+        extras.putString("symbol",dataForWidget.get(position).stockName);
+        fillInIntent.putExtras(extras);
+        view.setOnClickFillInIntent(R.id.list_item, fillInIntent);
 
         return view;
     }
