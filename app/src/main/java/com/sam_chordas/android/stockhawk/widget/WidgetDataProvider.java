@@ -59,10 +59,7 @@ public class WidgetDataProvider implements RemoteViewsService.RemoteViewsFactory
     @Override
     public void onDataSetChanged() {
         final long identityToken = Binder.clearCallingIdentity();
-
         getDataFromDB();
-        // Restore the identity - not sure if it's needed since we're going
-        // to return right here, but it just *seems* cleaner
         Binder.restoreCallingIdentity(identityToken);
     }
 
