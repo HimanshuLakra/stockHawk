@@ -17,7 +17,8 @@
     <string name="out_of_date">Out of date data.Connect to internet and update stocks.</string>
     <string name="no_stocks_widget">No stocks are available.</string>
     <string name="fab_content_desc">Search for a stock.</string>
-    <string name="try_again">Try to connect to internet.</string>
+    <string name="try_again">TRY AGAIN</string>
+    <string name="try_again_content">Try to connect to internet.</string>
     <string name="fab_content_desc_no_internet">No internet connection.Search is not available.</string>
     <string name="empty_recyclerview">No stocks are available</string>
     <string name="empty_recyclerview_no_internet">No stocks are available because of no internet connection.</string>
